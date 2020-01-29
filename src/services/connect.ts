@@ -1,4 +1,5 @@
 import { Connect } from 'aws-sdk';
+import { StartChatContactResponse } from 'aws-sdk/clients/connect';
 
 export interface ParticipantDetails {
     DisplayName: string;
@@ -9,7 +10,7 @@ export interface InitialMessage {
     ContentType: string;
 }
 
-interface ChatDetails {
+export interface ChatDetails {
     ContactId: string;
     ParticipantId: string;
     ParticipantToken: string;
@@ -32,8 +33,7 @@ const fetchChatDetails = (
     instanceId: string,
     participantDetails: ParticipantDetails,
     initialMessage: InitialMessage,
-): ChatDetails | null => {
-    let chatDetails = null;
+): Promise<StartChatContactResponse> => {
     const connectInstance = initializeConnect();
 
     const params = {
@@ -43,13 +43,8 @@ const fetchChatDetails = (
         InitialMessage: initialMessage,
     };
 
-    connectInstance.startChatContact(params, (err, data) => {
-        if (err) throw new Error(err.stack);
-
-        chatDetails = data;
-    });
-
-    return chatDetails;
+    const request = connectInstance.startChatContact(params);
+    return request.promise();
 };
 
 export { fetchChatDetails };

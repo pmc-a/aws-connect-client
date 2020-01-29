@@ -1,6 +1,14 @@
-import { fetchChatDetails, InitialMessage, ParticipantDetails } from './services/connect';
+import { ConnectParticipant } from 'aws-sdk';
 
-const initialize = (): string => {
+import { fetchChatDetails, InitialMessage, ParticipantDetails } from './services/connect';
+import { createParticipantChatClient, createParticipantConnection } from './services/connect-participant';
+
+interface ConnectClient {
+    client: ConnectParticipant;
+    connectionDetails: ConnectParticipant.CreateParticipantConnectionResponse;
+}
+
+const initialize = async (): Promise<ConnectClient> => {
     const mockParticipantDetails: ParticipantDetails = {
         DisplayName: 'Pedro',
     };
@@ -9,14 +17,28 @@ const initialize = (): string => {
         ContentType: 'plain/text',
     };
 
-    const chatDetails = fetchChatDetails(
-        'mock-contact-flow-id',
-        'mock-instanceId',
-        mockParticipantDetails,
-        mockInitialMessage,
-    );
+    try {
+        // Chat details containing ParticipantToken
+        const chatDetails = await fetchChatDetails(
+            'mock-contact-flow-id',
+            'mock-instanceId',
+            mockParticipantDetails,
+            mockInitialMessage,
+        );
 
-    return 'Successfully hitting the function within the library!';
+        // Client used to actually send messages etc.
+        const participantChatClient = createParticipantChatClient('us-east-1', 'https://mock-endpoint.com');
+
+        // Connection detials containing connection token required with each message
+        const connectionDetails = await createParticipantConnection(participantChatClient, chatDetails);
+
+        return {
+            client: participantChatClient,
+            connectionDetails,
+        };
+    } catch (err) {
+        return err.message;
+    }
 };
 
 export { initialize };

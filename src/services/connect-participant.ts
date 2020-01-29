@@ -1,6 +1,6 @@
 import { ConnectParticipant, Credentials } from 'aws-sdk';
 
-import { CreateParticipantConnectionResponse } from 'aws-sdk/clients/connectparticipant';
+import { CreateParticipantConnectionResponse, SendMessageResponse } from 'aws-sdk/clients/connectparticipant';
 import { StartChatContactResponse } from 'aws-sdk/clients/connect';
 
 export interface ConnectionDetails {
@@ -52,33 +52,30 @@ const createParticipantConnection = (
     return request.promise();
 };
 
-/**
- * Send a message using the chat client instance
- * @param chatClient ConnectParticipant chat client instance
- * @param connectionToken Token used to communicate with Connect - created by establishing a connection
- * @param content Content of the message to be sent
- * @param contentType Content Type of the message to be sent (usually plain/text)
- */
-const sendMessage = (
-    chatClient: ConnectParticipant,
-    connectionToken: string,
-    content: string,
-    contentType: string,
-): MessageResponse | null => {
-    let messageResponse = null;
-    const params = {
-        ConnectionToken: connectionToken,
-        Content: content,
-        ContentType: contentType,
-    };
+class ConnectParticipantController {
+    chatClient: ConnectParticipant;
+    connectionToken: string;
 
-    chatClient.sendMessage(params, (err, data) => {
-        if (err) throw new Error(err.stack);
+    constructor(chatClient: ConnectParticipant, connectionToken: string) {
+        this.chatClient = chatClient;
+        this.connectionToken = connectionToken;
+    }
 
-        messageResponse = data;
-    });
+    /**
+     * Send a message using the chat client instance
+     * @param content Content of the message to be sent
+     * @param contentType Content Type of the message to be sent (usually plain/text)
+     */
+    sendMessage(content: string, contentType: string): Promise<SendMessageResponse> {
+        const params = {
+            ConnectionToken: this.connectionToken,
+            Content: content,
+            ContentType: contentType,
+        };
 
-    return messageResponse;
-};
+        const request = this.chatClient.sendMessage(params);
+        return request.promise();
+    }
+}
 
-export { createParticipantChatClient, createParticipantConnection, sendMessage };
+export { createParticipantChatClient, createParticipantConnection, ConnectParticipantController };

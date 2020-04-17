@@ -47,10 +47,15 @@ const initialize = async (
             { headers: { 'Content-Type': 'application/json' } },
         );
 
+        // We now want to replicate the connect.ChatSession.create() functionality here
+
+        // ----------------- //
+
         // TODO: Take these details and pump them into creating the ctrl/session
         // Return the ctrl/session with various methods:
         // - connect
         // - sendMessage
+
         console.log(participantCredentials.data);
         return participantCredentials.data.startChatResult;
     } catch (error) {

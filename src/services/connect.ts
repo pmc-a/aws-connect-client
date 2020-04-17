@@ -1,8 +1,17 @@
 import { Connect } from 'aws-sdk';
 import { StartChatContactResponse } from 'aws-sdk/clients/connect';
 
-export interface ParticipantDetails {
+interface Attributes {
+    customerName: string;
+}
+interface ParticipantDetails {
     DisplayName: string;
+}
+
+export interface InitUserDetails {
+    Username: string;
+    Attributes: Attributes;
+    ParticipantDetails: ParticipantDetails;
 }
 
 export interface InitialMessage {

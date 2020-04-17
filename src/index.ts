@@ -1,6 +1,7 @@
 import { ConnectParticipant } from 'aws-sdk';
+import Axios from 'axios';
 
-import { fetchChatDetails, InitialMessage, ParticipantDetails } from './services/connect';
+import { fetchChatDetails, InitialMessage, InitUserDetails } from './services/connect';
 import {
     createParticipantChatClient,
     createParticipantConnection,
@@ -11,40 +12,79 @@ interface ConnectClient {
     client: ConnectParticipant;
     connectionDetails: ConnectParticipant.CreateParticipantConnectionResponse;
 }
+interface StartChatResult {
+    ContactId: string;
+    ParticipantId: string;
+    ParticipantToken: string;
+}
 
-// TODO: Actually pass variables in here to control various details
-// I.E: DisplayName, InitialMessage, Region and Endpoint
-const initialize = async (): Promise<ConnectClient> => {
-    const mockParticipantDetails: ParticipantDetails = {
-        DisplayName: 'Pedro',
+interface Response {
+    data: {
+        username: string;
+        instanceId: string;
+        previousContactId: string;
+        startChatResult: StartChatResult;
     };
-    const mockInitialMessage: InitialMessage = {
-        Content: 'mock-content',
-        ContentType: 'plain/text',
-    };
+}
+
+const initialize = async (
+    apiGatewayUrl: string,
+    initUserDetails: InitUserDetails,
+): Promise<StartChatResult | string> => {
+    console.log('Initialising the client...');
 
     try {
-        // Chat details containing ParticipantToken
-        const chatDetails = await fetchChatDetails(
-            'mock-contact-flow-id',
-            'mock-instanceId',
-            mockParticipantDetails,
-            mockInitialMessage,
+        const { Username, Attributes, ParticipantDetails } = initUserDetails;
+
+        // Make POST request to API Gateway Endpoint to interact with the Connect service (fetching credentials)
+        const participantCredentials: Response = await Axios.post(
+            apiGatewayUrl,
+            {
+                Username,
+                Attributes,
+                ParticipantDetails,
+            },
+            { headers: { 'Content-Type': 'application/json' } },
         );
 
-        // Client used to actually send messages etc.
-        const participantChatClient = createParticipantChatClient('us-east-1', 'https://mock-endpoint.com');
-
-        // Connection detials containing connection token required with each message
-        const connectionDetails = await createParticipantConnection(participantChatClient, chatDetails);
-
-        return {
-            client: participantChatClient,
-            connectionDetails,
-        };
-    } catch (err) {
-        return err.message;
+        // TODO: Take these details and pump them into creating the ctrl/session
+        // Return the ctrl/session with various methods:
+        // - connect
+        // - sendMessage
+        console.log(participantCredentials.data);
+        return participantCredentials.data.startChatResult;
+    } catch (error) {
+        console.error(error);
+        return 'Someting went wrong fetching the credentials';
     }
+
+    // const participantDetails: ParticipantDetails = {
+    //     DisplayName: displayName,
+    // };
+    // const initialMessage: InitialMessage = {
+    //     Content: initialMessageContent,
+    //     ContentType: 'text/plain',
+    // };
+
+    // try {
+    //     // Chat details containing ParticipantToken
+    //     const chatDetails = await fetchChatDetails(
+    //         'mock-contact-flow-id',
+    //         'mock-instanceId',
+    //         participantDetails,
+    //         initialMessage,
+    //     );
+
+    //     // Connection detials containing connection token required with each message
+    //     const connectionDetails = await createParticipantConnection(participantChatClient, chatDetails);
+
+    //     return {
+    //         client: participantChatClient,
+    //         connectionDetails,
+    //     };
+    // } catch (err) {
+    //     return err.message;
+    // }
 };
 
 /**
